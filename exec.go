@@ -1,6 +1,7 @@
 package libexec
 
 import (
+	"bytes"
 	"context"
 	"os"
 	"os/exec"
@@ -18,6 +19,12 @@ func Exec(ctx context.Context, cmds ...*exec.Cmd) error {
 		}
 		if cmd.Stderr == nil {
 			cmd.Stderr = os.Stderr
+		}
+		if cmd.Stdin == nil {
+			// If Stdin is nil, then exec library tries to assign it to /dev/null
+			// Null device does not exist in chrooted environment unless created, so we set a fake nil buffer
+			// just to remove this dependency
+			cmd.Stdin = bytes.NewReader(nil)
 		}
 
 		if err := cmd.Start(); err != nil {
