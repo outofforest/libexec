@@ -3,12 +3,23 @@ package libexec
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"syscall"
 
 	"github.com/ridge/parallel"
 )
+
+type cmdError struct {
+	Err   error
+	Debug string
+}
+
+// Error returns the string representation of an Error.
+func (e cmdError) Error() string {
+	return fmt.Sprintf("%s: %q", e.Err, e.Debug)
+}
 
 // Exec executes commands sequentially and terminates the running one gracefully if context is cancelled
 func Exec(ctx context.Context, cmds ...*exec.Cmd) error {
@@ -37,7 +48,10 @@ func Exec(ctx context.Context, cmds ...*exec.Cmd) error {
 				if ctx.Err() != nil {
 					return ctx.Err()
 				}
-				return err
+				if err != nil {
+					return &cmdError{Err: err, Debug: cmd.String()}
+				}
+				return nil
 			})
 			spawn("ctx", parallel.Exit, func(ctx context.Context) error {
 				<-ctx.Done()
