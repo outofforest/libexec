@@ -8,7 +8,9 @@ import (
 	"os/exec"
 	"syscall"
 
+	"github.com/outofforest/logger"
 	"github.com/outofforest/parallel"
+	"go.uber.org/zap"
 )
 
 type cmdError struct {
@@ -37,6 +39,9 @@ func Exec(ctx context.Context, cmds ...*exec.Cmd) error {
 			// just to remove this dependency
 			cmd.Stdin = bytes.NewReader(nil)
 		}
+
+		log := logger.Get(ctx)
+		log.Debug("Executing command", zap.String("command", cmd.String()))
 
 		if err := cmd.Start(); err != nil {
 			return err
