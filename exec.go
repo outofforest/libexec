@@ -8,7 +8,7 @@ import (
 	"os/exec"
 	"syscall"
 
-	"github.com/ridge/parallel"
+	"github.com/outofforest/parallel"
 )
 
 type cmdError struct {
