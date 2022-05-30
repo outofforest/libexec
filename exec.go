@@ -3,7 +3,6 @@ package libexec
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/outofforest/logger"
 	"github.com/outofforest/parallel"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -46,7 +46,7 @@ func Exec(ctx context.Context, cmds ...*exec.Cmd) error {
 		log.Debug("Executing command", zap.String("command", cmd.String()))
 
 		if err := cmd.Start(); err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 
 		err := parallel.Run(ctx, func(ctx context.Context, spawn parallel.SpawnFn) error {
@@ -83,7 +83,7 @@ func Kill(ctx context.Context, pids []int) error {
 				return parallel.Run(ctx, func(ctx context.Context, spawn parallel.SpawnFn) error {
 					proc, err := os.FindProcess(pid)
 					if err != nil {
-						return err
+						return errors.WithStack(err)
 					}
 					spawn("waiter", parallel.Exit, func(ctx context.Context) error {
 						_, _ = proc.Wait()
@@ -91,7 +91,7 @@ func Kill(ctx context.Context, pids []int) error {
 					})
 					spawn("killer", parallel.Continue, func(ctx context.Context) error {
 						if err := proc.Signal(syscall.SIGTERM); err != nil && !errors.Is(err, os.ErrProcessDone) {
-							return err
+							return errors.WithStack(err)
 						}
 						select {
 						case <-ctx.Done():
@@ -99,7 +99,7 @@ func Kill(ctx context.Context, pids []int) error {
 						case <-time.After(20 * time.Second):
 						}
 						if err := proc.Signal(syscall.SIGKILL); err != nil && !errors.Is(err, os.ErrProcessDone) {
-							return err
+							return errors.WithStack(err)
 						}
 						return nil
 					})
