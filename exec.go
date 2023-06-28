@@ -52,17 +52,18 @@ func Exec(ctx context.Context, cmds ...*exec.Cmd) error {
 			spawn("cmd", parallel.Exit, func(ctx context.Context) error {
 				err := cmd.Wait()
 				if ctx.Err() != nil {
-					return ctx.Err()
+					return errors.WithStack(ctx.Err())
 				}
 				if err != nil {
 					return errors.WithStack(cmdError{Err: err, Debug: cmd.String()})
 				}
 				return nil
 			})
-			spawn("ctx", parallel.Exit, func(ctx context.Context) error {
+			spawn("ctx", parallel.Fail, func(ctx context.Context) error {
 				<-ctx.Done()
 				_ = cmd.Process.Signal(syscall.SIGTERM)
-				return ctx.Err()
+				_ = cmd.Process.Signal(syscall.SIGINT)
+				return errors.WithStack(ctx.Err())
 			})
 			return nil
 		})
