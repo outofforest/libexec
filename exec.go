@@ -32,7 +32,7 @@ func Exec(ctx context.Context, cmds ...*exec.Cmd) error {
 		if cmd.SysProcAttr == nil {
 			cmd.SysProcAttr = &syscall.SysProcAttr{}
 		}
-		cmd.SysProcAttr.Setpgid = true
+		cmd.SysProcAttr.Setsid = true
 		cmd.SysProcAttr.Pdeathsig = syscall.SIGKILL
 		if cmd.Stdout == nil {
 			cmd.Stdout = os.Stdout
