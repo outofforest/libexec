@@ -9,10 +9,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/outofforest/logger"
-	"github.com/outofforest/parallel"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+
+	"github.com/outofforest/logger"
+	"github.com/outofforest/parallel"
 )
 
 type cmdError struct {
@@ -28,7 +29,11 @@ func (e cmdError) Error() string {
 // Exec executes commands sequentially and terminates the running one gracefully if context is cancelled
 func Exec(ctx context.Context, cmds ...*exec.Cmd) error {
 	for _, cmd := range cmds {
-		cmd := cmd
+		if cmd.SysProcAttr == nil {
+			cmd.SysProcAttr = &syscall.SysProcAttr{}
+		}
+		cmd.SysProcAttr.Setpgid = true
+		cmd.SysProcAttr.Pdeathsig = syscall.SIGKILL
 		if cmd.Stdout == nil {
 			cmd.Stdout = os.Stdout
 		}
